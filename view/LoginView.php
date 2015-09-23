@@ -1,5 +1,7 @@
 <?php
 
+namespace view;
+
 class LoginView {
 	private static $login = 'LoginView::Login';
 	private static $logout = 'LoginView::Logout';
@@ -9,9 +11,59 @@ class LoginView {
 	private static $cookiePassword = 'LoginView::CookiePassword';
 	private static $keep = 'LoginView::KeepMeLoggedIn';
 	private static $messageId = 'LoginView::Message';
+	private $message='';
+
+	private $model;
 
 	
+    public function __construct(\model\LoginModel $model) {
+				
+		$this->model = $model;
+	}
+    
+    /*
+     * Function that makes validation of user input and returns string messages.
+     * Maybe was possible to use throw exceptions here.
+     *
+     */
+    public function validation(){
 
+			if($this->getRequestUserName() === '' && !$this->model->isLoggedIn())
+			{
+				return  'Username is missing';
+
+			}
+			else if($this->getRequestPassword() === '' && !$this->model->isLoggedIn())
+			{
+                return  'Password is missing';
+
+			}
+			else if(!$this->model->isLoggedIn() && ($this->getRequestUserName() != $this->model->getUsername() || $this->getRequestPassword() != $this->model->getPassword()))
+			{
+				return  'Wrong name or password';
+
+			}
+			else if ( $this->model->isLoggedIn())
+			{
+			    return  'Welcome';
+			}
+    }
+    
+    /*
+     * Resets message!
+     */
+    public function resetMessage()
+    {
+       $message = '';
+    }
+
+    /*
+     * setter for message
+     */
+    public function setMessage($message)
+    {
+          $this->message = $message;
+    }
 	/**
 	 * Create HTTP response
 	 *
@@ -20,10 +72,16 @@ class LoginView {
 	 * @return  void BUT writes to standard output and cookies!
 	 */
 	public function response() {
-		$message = '';
-		
-		$response = $this->generateLoginFormHTML($message);
-		//$response .= $this->generateLogoutButtonHTML($message);
+
+		if($this->model->isLoggedIn()) 
+		{
+			$response = $this->generateLogoutButtonHTML($this->message);
+		} 
+		else 
+		{
+			$response = $this->generateLoginFormHTML($this->message);
+		}
+
 		return $response;
 	}
 
@@ -32,6 +90,7 @@ class LoginView {
 	* @param $message, String output message
 	* @return  void, BUT writes to standard output!
 	*/
+
 	private function generateLogoutButtonHTML($message) {
 		return '
 			<form  method="post" >
@@ -54,7 +113,7 @@ class LoginView {
 					<p id="' . self::$messageId . '">' . $message . '</p>
 					
 					<label for="' . self::$name . '">Username :</label>
-					<input type="text" id="' . self::$name . '" name="' . self::$name . '" value="" />
+					<input type="text" id="' . self::$name . '" name="' . self::$name . '" value="' . $this->getRequestUserName() . '" />
 
 					<label for="' . self::$password . '">Password :</label>
 					<input type="password" id="' . self::$password . '" name="' . self::$password . '" />
@@ -69,8 +128,43 @@ class LoginView {
 	}
 	
 	//CREATE GET-FUNCTIONS TO FETCH REQUEST VARIABLES
-	private function getRequestUserName() {
+	public function getRequestUserName() {
 		//RETURN REQUEST VARIABLE: USERNAME
+
+		if(isset($_POST[self::$name])) {
+
+            return $_POST[self::$name];
+
+        } 
+        else {
+
+            return '';
+
+        }
+	}
+	public function getRequestPassword() {
+		//RETURN REQUEST VARIABLE: PASSWORD
+
+		if(isset($_POST[self::$password])) {
+
+            return $_POST[self::$password];
+
+        } 
+        else {
+
+            return '';
+            
+        }
+	}
+    
+    // If login button is pressed
+	public function isLoginPosted() {
+		return isset($_POST[self::$login]);
+	}
+	
+	// If logout button is pressed
+	public function isLogoutPosted() {
+		return isset($_POST[self::$logout]);
 	}
 	
 }
